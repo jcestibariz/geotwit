@@ -1,11 +1,14 @@
 package com.quest.geotwit;
 
+import android.Manifest;
 import android.app.Fragment;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -51,6 +54,9 @@ public class MainActivity extends FragmentActivity
 
     private static final float HUE = 202f;
 
+    private static final String[] PERMISSIONS = {Manifest.permission.ACCESS_FINE_LOCATION};
+
+    private GoogleMap googleMap;
     private TextView tweetView;
     private boolean tweetVisible;
 
@@ -94,16 +100,13 @@ public class MainActivity extends FragmentActivity
      */
     @Override
     public void onMapReady(GoogleMap map) {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        googleMap = map;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED) {
             map.setMyLocationEnabled(true);
+        }
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(PERMISSIONS, 42);
         }
 
         // Add a marker in T.O. and move the camera
@@ -153,9 +156,27 @@ public class MainActivity extends FragmentActivity
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        for (int i = 0; i < permissions.length; ++i) {
+            if (Manifest.permission.ACCESS_FINE_LOCATION.equals(permissions[i]) &&
+                    grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    googleMap.setMyLocationEnabled(true);
+                }
+                catch (SecurityException e) {
+                    throw new IllegalStateException("Unexpected exception", e);
+                }
+            }
+        }
+    }
+
+    @Override
     public void onLogin(TwitterSession session) {
         Log.d("Main", "Building up a query...");
-        Toast.makeText(this, "Login Successful!", Toast.LENGTH_SHORT);
+        Toast.makeText(this, "Login Successful!", Toast.LENGTH_SHORT)
+                .show();
 
         searchTweets();
     }
