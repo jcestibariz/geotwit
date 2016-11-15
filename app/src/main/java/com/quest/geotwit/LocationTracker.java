@@ -14,13 +14,21 @@ import android.support.v4.app.ActivityCompat;
  */
 
 public class LocationTracker implements LocationListener {
+    private static final Location TORONTO;
+    static {
+        TORONTO = new Location("Hard Coded Toronto");
+        TORONTO.setLatitude(43.6532);
+        TORONTO.setLongitude(-79.3832);
+    }
     private volatile Location loc;
 
     LocationTracker(Context ctx) {
-
-        if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        LocationManager mgr = (LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(ctx,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 &&
-                ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.checkSelfPermission(ctx,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -28,16 +36,13 @@ public class LocationTracker implements LocationListener {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            loc = TORONTO;
             return;
         }
-
-        LocationManager mgr = (LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE);
         mgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
         loc = mgr.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
         if (loc == null) {
-            loc = new Location("Hard Coded Toronto");
-            loc.setLatitude(43.6532);
-            loc.setLongitude(-79.3832);
+            loc = TORONTO;
         }
     }
     @Override

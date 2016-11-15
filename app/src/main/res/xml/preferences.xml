@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Location">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:title="Use Current Location"
+            android:key="check_box_preference_1"
+            android:id="@+id/locationUseCurrent" />
+        <EditTextPreference
+            android:defaultValue="5"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Search Radius (KM)"
+            android:key="edit_text_preference_1"
+            android:id="@+id/locationRadius" />
+        <EditTextPreference
+            android:defaultValue="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Hard Coded Latitude"
+            android:key="edit_text_preference_1"
+            android:id="@+id/latitude"
+            android:enabled="false" />
+        <EditTextPreference
+            android:defaultValue="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Hard Coded Longitude"
+            android:key="edit_text_preference_1"
+            android:id="@+id/longitude"
+            android:elevation="1dp"
+            android:enabled="false" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Tweet Queries ">
+
+        <EditTextPreference
+            android:defaultValue="cat"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Query String"
+            android:key="edit_text_preference_1"
+            android:id="@+id/queryString" />
+        <EditTextPreference
+            android:defaultValue="Default"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Language"
+            android:key="edit_text_preference_1"
+            android:id="@+id/queryLanguage" />
+        <EditTextPreference
+            android:defaultValue="mixed"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Result Type"
+            android:key="edit_text_preference_1"
+            android:id="@+id/queryResultType" />
+        <EditTextPreference
+            android:defaultValue="15"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Return at most"
+            android:key="edit_text_preference_1"
+            android:id="@+id/queryReturnCount" />
+    </PreferenceCategory>
+</PreferenceScreen>
