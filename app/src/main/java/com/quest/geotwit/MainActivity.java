@@ -1,11 +1,11 @@
 package com.quest.geotwit;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.app.Fragment;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
@@ -20,15 +20,20 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
+import com.twitter.sdk.android.core.TwitterSession;
+
 import io.fabric.sdk.android.Fabric;
 
 public class MainActivity extends FragmentActivity
-        implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener {
+        implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener,
+        LoginDialogFragment.LoginListener {
 
     // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
     private static final String TWITTER_KEY = "jjbUmqJiQRBIXBkxi77NUeUuo";
     private static final String TWITTER_SECRET = "5Hg33mVYouVXvMnnAiBikmw7UcFMt5ZculjtF4pcxT43uQRN0e";
 
+    private static final String TAG = "MainActivity";
+    private static final String LOGIN_FRAGMENT = "Login";
 
     private static final float HUE = 202f;
 
@@ -48,6 +53,9 @@ public class MainActivity extends FragmentActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        new LoginDialogFragment()
+                .show(getFragmentManager(), LOGIN_FRAGMENT);
     }
 
 
@@ -108,5 +116,20 @@ public class MainActivity extends FragmentActivity
             tweetVisible = false;
             tweetView.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        Fragment fragment = getFragmentManager().findFragmentByTag(LOGIN_FRAGMENT);
+        if (fragment != null) {
+            fragment.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    @Override
+    public void onLogin(TwitterSession session) {
+        // TODO something...
     }
 }
