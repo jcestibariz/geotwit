@@ -3,11 +3,15 @@ package com.quest.geotwit;
 import android.app.Fragment;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -19,10 +23,20 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.twitter.sdk.android.Twitter;
+import com.twitter.sdk.android.core.TwitterApiClient;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
 import com.twitter.sdk.android.core.TwitterSession;
+import com.twitter.sdk.android.core.models.Search;
+import com.twitter.sdk.android.core.models.Tweet;
+import com.twitter.sdk.android.core.services.SearchService;
+import com.twitter.sdk.android.core.services.params.Geocode;
+
+import java.io.IOException;
+import java.util.Locale;
 
 import io.fabric.sdk.android.Fabric;
+import retrofit2.Call;
+import retrofit2.Response;
 
 public class MainActivity extends FragmentActivity
         implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener,
@@ -40,6 +54,8 @@ public class MainActivity extends FragmentActivity
     private TextView tweetView;
     private boolean tweetVisible;
 
+    private LocationTracker locationTracker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,8 +70,16 @@ public class MainActivity extends FragmentActivity
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        new LoginDialogFragment()
+        //FIXME: I'm clearing these so you're forced to reauth - until we
+        // can clear 'em through a settings dialog, or get annoyed.
+        Twitter.getSessionManager().clearActiveSession();
+        TwitterSession session = Twitter.getSessionManager().getActiveSession();
+        if (session == null) {
+            new LoginDialogFragment()
                 .show(getFragmentManager(), LOGIN_FRAGMENT);
+        }
+
+        locationTracker = new LocationTracker(this);
     }
 
 
@@ -130,6 +154,69 @@ public class MainActivity extends FragmentActivity
 
     @Override
     public void onLogin(TwitterSession session) {
-        // TODO something...
+        Log.d("Main", "Building up a query...");
+        Toast.makeText(this, "Login Successful!", Toast.LENGTH_SHORT);
+
+        searchTweets();
+    }
+
+    private void searchTweets() {
+        final String queryStr = "cat";
+
+        Location loc = locationTracker.getLocation();
+        final int radius = 5;
+        final Geocode geocode = null;//for now I don't care about location - use next line if you do
+        //new Geocode(loc.getLatitude(), loc.getLongitude(), radius, Geocode.Distance.KILOMETERS);
+
+        final String lang = Locale.getDefault().getDisplayLanguage();//optional - restricts tweets to given lang
+        final String locale = null;//optional - like lang, but only 'ja' is effective.
+        final String result_type = "mixed";//one of mixed|recent|popular.
+        final int count = 15;//optional. Max tweets - up to 100.
+        final String until = null;//for tweets before given date (e.g.: "2016-07-19" - at least they used sane date ordering)
+        final Long since_id = null;//tweets have unique ID; returns results with ID greater than this.  Useful if looking for updates (cache the last value).
+        final Long max_id = null;//results before this ID.
+        final Boolean include_entities = null;//whether an entitities node is included in response.  Not sure what this is yet.
+
+        //notice that we're pulling session from static - you can do this from any activity.
+        TwitterSession session = Twitter.getSessionManager().getActiveSession();
+        TwitterApiClient client = new TwitterApiClient(session);
+
+        SearchService svc = client.getSearchService();
+
+        Call<Search> searchCall = svc.tweets(//this invocation takes forever on emulator... not sure why.
+                queryStr, geocode, lang, locale, result_type, count, until, since_id, max_id, include_entities);
+
+        Toast toast = Toast.makeText(this, "Querying: " + queryStr, Toast.LENGTH_SHORT);
+        toast.show();
+        AsyncTwitterCall task = new AsyncTwitterCall();
+        task.execute(searchCall);
+    }
+
+    private class AsyncTwitterCall extends AsyncTask<Call<Search>, Integer, Response<Search>> {
+
+        @Override
+        protected Response<Search> doInBackground(Call<Search>... calls) {
+            if (calls.length != 1) {
+                throw new IllegalArgumentException("Expecting one twitter search.");
+            }
+            try {
+                return calls[0].execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Response<Search> response) {
+            Log.d("Main", "Query results: " + response.code());
+            StringBuilder results = new StringBuilder();
+            for (Tweet t: response.body().tweets) {
+                results.append(t.id + ": " + t.user + ": " + t.text + "\n");
+            }
+            //FIXME: we want to do something with the results...
+            Toast toast = Toast.makeText(MainActivity.this, results.toString(), Toast.LENGTH_LONG);
+            toast.show();
+        }
     }
 }
