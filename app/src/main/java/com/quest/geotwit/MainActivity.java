@@ -25,6 +25,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.quest.geotwit.twitter.TweetObject;
 import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.TwitterApiClient;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
@@ -35,6 +36,8 @@ import com.twitter.sdk.android.core.services.SearchService;
 import com.twitter.sdk.android.core.services.params.Geocode;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import io.fabric.sdk.android.Fabric;
@@ -59,6 +62,7 @@ public class MainActivity extends FragmentActivity
     private GoogleMap googleMap;
     private TextView tweetView;
     private boolean tweetVisible;
+    private List<Marker> currentMarkers = new ArrayList<>();
 
     private LocationTracker locationTracker;
 
@@ -69,7 +73,7 @@ public class MainActivity extends FragmentActivity
         Fabric.with(this, new Twitter(authConfig));
         setContentView(R.layout.activity_main);
 
-        tweetView = (TextView) findViewById(R.id.tweet);
+        tweetView = (TextView) findViewById(R.id.tweet_area);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -112,12 +116,28 @@ public class MainActivity extends FragmentActivity
         // Add a marker in T.O. and move the camera
         LatLng to = new LatLng(43.648, -79.369);
         map.addMarker(new MarkerOptions().position(to)
-                .icon(BitmapDescriptorFactory.defaultMarker(HUE))) // "Twitter" hue
-                .setTag("This is a tweet!");
-        map.addMarker(new MarkerOptions().position(new LatLng(43.649, -79.368))
-                .icon(BitmapDescriptorFactory.defaultMarker(HUE))) // "Twitter" hue
-                .setTag("This is another tweet!");
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(to, 14f));
+
+        Marker m1 = map.addMarker(new MarkerOptions().position(new LatLng(43.635, -79.375))
+                .icon(BitmapDescriptorFactory.defaultMarker(HUE))); // "Twitter" hue
+        TweetObject test1 = new TweetObject();
+        test1.setText("This is a test (1)");
+        double[] location = new double[] {-79.375, 43.635};
+        test1.setCoordinates(location);
+        test1.setId(2345L);
+        m1.setTag(test1);
+        currentMarkers.add(m1);
+
+        Marker m2 = map.addMarker(new MarkerOptions().position(new LatLng(43.639, -79.359))
+                .icon(BitmapDescriptorFactory.defaultMarker(HUE))); // "Twitter" hue
+        TweetObject test2 = new TweetObject();
+        test2.setText("This is a test (2)");
+        location = new double[] {-79.359, 43.639};
+        test2.setCoordinates(location);
+        test2.setId(2345L);
+        m2.setTag(test2);
+        currentMarkers.add(m2);
 
         map.setOnMarkerClickListener(this);
         map.setOnMapClickListener(this);
@@ -129,11 +149,16 @@ public class MainActivity extends FragmentActivity
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        tweetView.setText((String) marker.getTag());
+        TweetObject t = (TweetObject) marker.getTag();
+        if (t == null ) {
+            return false;
+        }
+
         if (!tweetVisible) {
             tweetVisible = true;
             tweetView.setVisibility(View.VISIBLE);
         }
+        showTweetDetails(t);
         return true;
     }
 
@@ -143,6 +168,28 @@ public class MainActivity extends FragmentActivity
             tweetVisible = false;
             tweetView.setVisibility(View.GONE);
         }
+    }
+
+    protected void updateMapTweets(List<Tweet> tweets) {
+        /*
+        for (Marker m : currentMarkers) {
+            m.remove();
+        }
+        currentMarkers.clear();
+        */
+
+        for (Tweet t : tweets) {
+            TweetObject to = new TweetObject(t);
+            MarkerOptions mo = new MarkerOptions().position(new LatLng(to.getLatitude(), to.getLongitude()))
+                    .icon(BitmapDescriptorFactory.defaultMarker(HUE));
+            Marker m = googleMap.addMarker(mo);
+            m.setTag(to);
+            currentMarkers.add(m);
+        }
+    }
+
+    void showTweetDetails(TweetObject t) {
+        tweetView.setText(t.getText());
     }
 
     @Override
@@ -238,6 +285,8 @@ public class MainActivity extends FragmentActivity
             //FIXME: we want to do something with the results...
             Toast toast = Toast.makeText(MainActivity.this, results.toString(), Toast.LENGTH_LONG);
             toast.show();
+
+            updateMapTweets(response.body().tweets);
         }
     }
 }
